@@ -186,6 +186,28 @@ if $result.exit_code != 0 {
 }
 ```
 
+### Suppress errors with `do -i` / `do -c`
+
+`do -i` (ignore errors) runs a closure and suppresses errors, returning null on failure.
+`do -c` (capture errors) catches errors and returns them as values.
+
+```nu
+# Fire-and-forget — silently ignore failure
+do -i { rm $old_file }
+
+# Concise default value pattern
+let config = (do -i { open settings.toml } | default {})
+
+# Capture errors as values (useful to abort downstream pipeline)
+let result = (do -c { ^failing-cmd })
+
+# Compare error handling approaches:
+# do -i    — suppress error, return null (simplest)
+# do -c    — catch error as value, abort downstream pipeline on failure
+# try/catch — inspect/log/recover from errors
+# complete  — full exit_code + stdout + stderr for externals
+```
+
 ## Advanced Glob Patterns
 
 ```nu

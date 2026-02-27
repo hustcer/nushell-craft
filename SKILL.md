@@ -403,6 +403,27 @@ if $result.exit_code != 0 {
 }
 ```
 
+### Suppress errors with `do -i`
+
+`do -i` (ignore errors) runs a closure and suppresses any errors, returning null on failure. `do -c` (capture errors) catches errors and returns them as values.
+
+```nu
+# Ignore errors — returns null if the closure fails
+do -i { rm non_existent_file }
+
+# Use as a concise fallback
+let val = (do -i { open config.toml | get setting } | default 'fallback')
+
+# Capture errors as values (instead of aborting the pipeline)
+let result = (do -c { ^some-cmd })
+```
+
+**When to use each approach:**
+- `do -i` — Fire-and-forget, or when you only need a default on failure
+- `do -c` — Catch errors as values to abort downstream pipeline on failure
+- `try/catch` — When you need to inspect or log the error
+- `complete` — When you need exit code + stdout + stderr from external commands
+
 ## Testing
 
 ### Using std assert
