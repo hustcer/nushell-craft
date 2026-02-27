@@ -17,6 +17,9 @@ Write idiomatic, performant, secure, and maintainable [Nushell](https://www.nush
 ## Install
 
 ```bash
+# Install by npx skills
+npx skills add hustcer/nushell-craft
+# OR Install for Claude by claude cli
 claude skill add --name nushell-craft hustcer/nushell-craft
 ```
 
