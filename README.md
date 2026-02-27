@@ -1,6 +1,6 @@
 # nushell-craft
 
-Nushell best practices, security hardening, and code review skill for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+Nushell best practices, security hardening, and code review skill for Agents.
 
 Write idiomatic, performant, secure, and maintainable [Nushell](https://www.nushell.sh/) scripts — with built-in code review, anti-pattern detection, and Bash-to-Nushell conversion.
 

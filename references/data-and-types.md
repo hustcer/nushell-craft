@@ -171,7 +171,7 @@ let users = [
 1..<5                 # Exclusive end: [1, 2, 3, 4]
 1..2..10              # With step: [1, 3, 5, 7, 9]
 5..1                  # Reverse: [5, 4, 3, 2, 1]
-'a'..'e'              # Character ranges
+seq char a e          # Character sequence: [a, b, c, d, e]
 ```
 
 ## Type Conversions

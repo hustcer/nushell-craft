@@ -269,7 +269,7 @@ def double-all []: list<int> -> list<int> {
 def process []: table -> table {
     let input = $in
     let count = $input | length
-    $input | first ($count / 2)
+    $input | first ($count // 2)
 }
 ```
 

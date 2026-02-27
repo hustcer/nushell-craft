@@ -102,7 +102,7 @@ let add_ten = {|x| $x + 10 }
 # Result: [12, 14, 16]
 
 # Or build a composed closure
-let transform = {|x| $x | do $double | do $add_ten }
+let transform = {|x| do $double $x | do $add_ten $in }
 [1 2 3] | each $transform
 ```
 
@@ -125,7 +125,7 @@ let quadruple = (make-multiplier 4)
 ```nu
 let multiplier = 10
 let compute = {|x| ($x * 2) + $multiplier }
-5 | do $compute   # 20
+do $compute 5   # 20
 
 # Mutable variables CANNOT be captured in closures
 mut sum = 0
@@ -142,7 +142,8 @@ let sum = [1 2 3] | reduce {|x, acc| $acc + $x }
 ```nu
 # Fibonacci using generate
 generate {|state|
-    let [a, b] = $state
+    let a = $state.0
+    let b = $state.1
     {out: $a, next: [$b, ($a + $b)]}
 } [0, 1] | first 10
 ```

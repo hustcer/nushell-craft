@@ -168,7 +168,7 @@ def safe-remove [target: path] {
     let resolved = ($target | path expand)
 
     # Never allow removing root or home
-    if $resolved == '/' or $resolved == $nu.home-path {
+    if $resolved == '/' or $resolved == $nu.home-dir {
         error make {msg: $'Refusing to remove ($resolved)'}
     }
 
