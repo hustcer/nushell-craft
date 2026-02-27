@@ -1,0 +1,301 @@
+# Advanced Nushell Patterns Reference
+
+## Performance Optimization
+
+### Lazy vs eager evaluation
+
+```nu
+# Lazy (streaming) — memory efficient for large data, single-pass
+open large.csv | where status == 'active' | first 10
+
+# Eager (load all) — faster for small data with multiple operations
+let data = (open large.csv | where status == 'active')
+$data | first 10
+$data | last 10
+$data | length
+```
+
+**Use lazy when:** Large files/streams, single-pass operations, memory constrained
+**Use eager when:** Small datasets (<10k rows), multiple operations on same data, random access needed
+
+### Avoid repeated computation
+
+```nu
+# Bad — computes expensive-func 3 times
+if (expensive-func) > 10 {
+    print (expensive-func)
+    save-to-file (expensive-func)
+}
+
+# Good — compute once
+let result = expensive-func
+if $result > 10 {
+    print $result
+    save-to-file $result
+}
+```
+
+### Parallel processing
+
+```nu
+# Sequential
+$urls | each {|url| http get $url }
+
+# Parallel — faster for I/O operations
+$urls | par-each {|url| http get $url }
+
+# With thread pool size
+$urls | par-each --threads 4 {|url| http get $url }
+```
+
+**Best for:** I/O operations, CPU-intensive transforms, independent operations
+**Avoid for:** Small lists (overhead > benefit), side effects, order-dependent processing
+
+### Stream flattening with each --flatten
+
+```nu
+# Without --flatten: waits for each stream to complete, returns list<list<string>>
+ls *.txt | each {|f| open $f.name | lines }
+
+# With --flatten: streams items as they arrive, returns list<string>
+ls *.txt | each --flatten {|f| open $f.name | lines }
+
+# Practical: search across files without waiting for all to load
+ls **/*.nu | each --flatten {|f|
+    open $f.name | lines | find 'export def'
+} | str join (char nl)
+```
+
+## Memory-Efficient Patterns
+
+### Processing large files
+
+```nu
+# Bad — loads entire file into memory then filters
+open large.log | lines | where {$in =~ 'ERROR'}
+
+# Good — streams line by line
+open large.log | lines | each --flatten {|line|
+    if ($line =~ 'ERROR') { $line }
+}
+```
+
+### Batched processing
+
+```nu
+# Process in chunks of 1000
+open large.csv | chunks 1000 | each {|batch|
+    $batch | process-batch
+} | flatten
+```
+
+## Advanced Closure Patterns
+
+### Closure composition
+
+```nu
+let double = {|x| $x * 2 }
+let add_ten = {|x| $x + 10 }
+
+# Compose manually
+[1 2 3] | each {|x| do $add_ten (do $double $x) }
+# Result: [12, 14, 16]
+
+# Or build a composed closure
+let transform = {|x| $x | do $double | do $add_ten }
+[1 2 3] | each $transform
+```
+
+### Closure currying pattern
+
+```nu
+def make-multiplier [factor: int] {
+    {|x| $x * $factor }
+}
+
+let triple = (make-multiplier 3)
+let quadruple = (make-multiplier 4)
+
+[1 2 3] | each $triple      # [3, 6, 9]
+[1 2 3] | each $quadruple   # [4, 8, 12]
+```
+
+### Closures capture environment (immutable only)
+
+```nu
+let multiplier = 10
+let compute = {|x| ($x * 2) + $multiplier }
+5 | do $compute   # 20
+
+# Mutable variables CANNOT be captured in closures
+mut sum = 0
+[1 2 3] | each {|x| $sum += $x }  # Error!
+
+# Use reduce instead
+let sum = [1 2 3] | reduce {|x, acc| $acc + $x }
+```
+
+## Stream Patterns
+
+### Generate infinite sequences
+
+```nu
+# Fibonacci using generate
+generate {|state|
+    let [a, b] = $state
+    {out: $a, next: [$b, ($a + $b)]}
+} [0, 1] | first 10
+```
+
+### Stream control
+
+```nu
+$stream | skip while {|x| $x < 100 }   # Skip until condition false
+$stream | take while {|x| $x < 1000 }  # Take until condition false
+[1 2 3 4 5] | window 3                  # Sliding window: [[1,2,3], [2,3,4], [3,4,5]]
+$data | chunks 100                       # Fixed-size batches
+```
+
+## Advanced Error Handling
+
+### Graceful degradation
+
+```nu
+def robust-fetch [url: string] {
+    try {
+        http get $url
+    } catch {
+        try {
+            ^curl -s $url | from json
+        } catch {
+            {error: 'All fetch methods failed'}
+        }
+    }
+}
+```
+
+### External command error handling with complete
+
+```nu
+let result = (^cargo build o+e>| complete)
+if $result.exit_code != 0 {
+    print -e $'Build failed:\n($result.stderr)'
+} else {
+    print 'Build succeeded'
+}
+```
+
+## Advanced Glob Patterns
+
+```nu
+# Multiple extensions
+glob **/*.{rs,toml,md}
+
+# Exclusions
+glob **/*.rs --exclude [**/target/** **/tests/**]
+glob **/tsconfig.json --exclude [**/node_modules/**]
+
+# Character classes
+glob '[Cc]*'                          # Files starting with C or c
+glob '[!0-9]*'                        # Files NOT starting with digit
+glob 'src/[a-m]*.rs'                  # Files starting with a-m
+
+# Depth limit
+glob **/*.rs --depth 2                # Max 2 directories deep
+
+# Directory only
+glob '[A-Z]*' --no-file --no-symlink  # Only directories starting with uppercase
+
+# Follow symlinks
+glob '**/*.txt' --follow-symlinks
+
+# Case-insensitive (wax syntax)
+glob '(?i)readme*'
+```
+
+## Custom Data Types with Structured Output
+
+```nu
+def make-report [title: string, data: table]: nothing -> record {
+    {
+        title: $title
+        generated: (date now)
+        row_count: ($data | length)
+        columns: ($data | columns)
+        data: $data
+    }
+}
+```
+
+## Row Conditions vs Closures (Deep Dive)
+
+### Row conditions — short-hand syntax
+
+```nu
+# Left side auto-expands to $it.field
+$table | where size > 100              # $it.size > 100
+$table | where name =~ 'test'          # $it.name =~ 'test'
+ls | where type == file                # Simple and readable
+
+# Limitation: subexpressions need explicit $it
+ls | where ($it.name | str downcase) =~ readme
+```
+
+### Closures — full flexibility
+
+```nu
+$table | where {|row| $row.size > 100 }
+$table | where {$in.size > 100 }
+
+# Can be stored and reused
+let big_files = {|row| $row.size > 1mb }
+ls | where $big_files
+
+# Works anywhere
+$list | each {|x| $x * 2 }
+```
+
+**Row conditions:** Simple field comparisons (cleaner syntax), cannot be stored in variables
+**Closures:** Complex logic, reusable conditions, nested operations
+
+## Iteration Pitfalls
+
+### each on single records
+
+```nu
+# Bad — runs only once, not iterating fields!
+let rec = {a: 1, b: 2}
+$rec | each {|field| print $field }   # Only runs once
+
+# Good — use items, values, or transpose
+$rec | items {|key, val| print $'($key): ($val)' }
+$rec | transpose key val | each {|row| ... }
+```
+
+### Pipe vs call ambiguity
+
+```nu
+# These are different!
+$list | my-func arg1 arg2    # $list piped as input, arg1 & arg2 as params
+my-func $list arg1 arg2     # All three as positional params (if signature allows)
+```
+
+## Debugging Techniques
+
+```nu
+# Inspect type
+$value | describe
+
+# Print intermediate values without breaking pipeline
+$data | each {|x| print $x; $x }
+
+# Measure execution time
+timeit { expensive-command }
+
+# Inspect metadata (span info for error reporting)
+metadata $value
+
+# View full command signature
+help my-command
+scope commands | where name == 'my-command'
+```

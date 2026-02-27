@@ -13,25 +13,30 @@
 ## Conversion Rules
 
 ### Use bare words when:
+
 - Inside arrays: `[foo bar baz]` not `["foo" "bar" "baz"]`
 - Path join arrays: `[$dir patches]` not `[$dir "patches"]`
 - Match patterns: `match $x { absolute => ... }` not `match $x { "absolute" => ... }`
 
 ### Use raw strings when:
+
 - Regex patterns with special chars: `r#'(?:a/|b/)?'#` not `"(?:a/|b/)?"`
 - Strings containing both single and double quotes
 - Multi-line content without interpolation
 
 ### Use single quotes when:
+
 - Simple strings: `'hello world'` not `"hello world"`
 - No escape sequences or interpolation needed
 
 ### Use single-quoted interpolation when:
+
 - Variables/expressions present but NO escape sequences:
   - `$'Package: ($pkg.name)'` not `$"Package: ($pkg.name)"`
   - `$'Error: ($msg)'` not `$"Error: ($msg)"`
 
 ### Keep double quotes ONLY when:
+
 - Escape sequences present: `"\n"`, `"\t"`, `"\r"`, `"\""`
 - Need both interpolation and escapes: `$"Line: ($n)\n"`
 
@@ -65,19 +70,20 @@ print '(ansi g)Success!'    # Prints literal "(ansi g)"
 
 ## String Type Overview
 
-| Format | Syntax | Escapes | Interpolation | Use case |
-|--------|--------|---------|---------------|----------|
-| Single-quoted | `'...'` | None | No | Simple strings, Windows paths |
-| Double-quoted | `"..."` | `\n \t \" \\` etc. | No | Strings needing escape sequences |
-| Raw string | `r#'...'#` | None | No | Regex, strings with quotes, multi-line |
-| Bare word | `hello` | None | No | Command arguments, list items |
-| Backtick | `` `...` `` | None | No | Paths/args with spaces, globs |
-| Single-interpolated | `$'...'` | None | Yes | Embedding variables (preferred) |
-| Double-interpolated | `$"..."` | Yes | Yes | Variables + escape sequences |
+| Format              | Syntax      | Escapes            | Interpolation | Use case                               |
+| ------------------- | ----------- | ------------------ | ------------- | -------------------------------------- |
+| Single-quoted       | `'...'`     | None               | No            | Simple strings, Windows paths          |
+| Double-quoted       | `"..."`     | `\n \t \" \\` etc. | No            | Strings needing escape sequences       |
+| Raw string          | `r#'...'#`  | None               | No            | Regex, strings with quotes, multi-line |
+| Bare word           | `hello`     | None               | No            | Command arguments, list items          |
+| Backtick            | `` `...` `` | None               | No            | Paths/args with spaces, globs          |
+| Single-interpolated | `$'...'`    | None               | Yes           | Embedding variables (preferred)        |
+| Double-interpolated | `$"..."`    | Yes                | Yes           | Variables + escape sequences           |
 
 ## Examples
 
 ### Array optimization
+
 ```nu
 # Before
 let dirs = [$root, "node_modules", ".pnpm"]
@@ -89,6 +95,7 @@ let tools = [git patch]
 ```
 
 ### Interpolation optimization
+
 ```nu
 # Before
 print $"Package: ($pkg.name)"
@@ -100,6 +107,7 @@ print $'Error: ($tool) not found'
 ```
 
 ### Keep double quotes for escapes
+
 ```nu
 # Keep — has \n escape
 print $"\nNext steps:"
@@ -110,6 +118,7 @@ let marker = $"'($name)@($ver)':"
 ```
 
 ### Regex with raw strings
+
 ```nu
 # Before
 let pattern = "(?:a/|b/)?"

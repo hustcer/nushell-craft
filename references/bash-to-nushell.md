@@ -4,41 +4,41 @@ Quick reference for converting common Bash patterns to idiomatic Nushell.
 
 ## Redirections & Pipes
 
-| Bash | Nushell | Notes |
-|------|---------|-------|
-| `echo "text" > file` | `'text' \| save file` | |
-| `echo "text" >> file` | `'text' \| save --append file` | |
-| `cmd 2>/dev/null` | `cmd e>\| ignore` | Discard stderr |
-| `cmd > /dev/null 2>&1` | `cmd o+e>\| ignore` | Discard all output |
-| `cmd 2>&1` | `cmd o+e>\| ...` | Merge stderr into stdout |
-| `cmd1 \| tee log.txt \| cmd2` | `cmd1 \| tee { save log.txt } \| cmd2` | |
-| `cmd \| head -5` | `cmd \| first 5` | |
-| `cmd \| tail -3` | `cmd \| last 3` | |
+| Bash                          | Nushell                                | Notes                    |
+| ----------------------------- | -------------------------------------- | ------------------------ |
+| `echo "text" > file`          | `'text' \| save file`                  |                          |
+| `echo "text" >> file`         | `'text' \| save --append file`         |                          |
+| `cmd 2>/dev/null`             | `cmd e>\| ignore`                      | Discard stderr           |
+| `cmd > /dev/null 2>&1`        | `cmd o+e>\| ignore`                    | Discard all output       |
+| `cmd 2>&1`                    | `cmd o+e>\| ...`                       | Merge stderr into stdout |
+| `cmd1 \| tee log.txt \| cmd2` | `cmd1 \| tee { save log.txt } \| cmd2` |                          |
+| `cmd \| head -5`              | `cmd \| first 5`                       |                          |
+| `cmd \| tail -3`              | `cmd \| last 3`                        |                          |
 
 ## Variables
 
-| Bash | Nushell | Notes |
-|------|---------|-------|
-| `FOO="bar"` | `let foo = 'bar'` | Immutable by default |
-| `FOO="bar"` | `mut foo = 'bar'` | When mutation needed |
-| `readonly FOO="bar"` | `const foo = 'bar'` | Parse-time constant |
-| `export FOO="bar"` | `$env.FOO = 'bar'` | Environment variable |
-| `echo $FOO` | `$env.FOO` | Access env var |
-| `echo ${FOO:-default}` | `$env.FOO? \| default 'default'` | With fallback |
-| `echo $?` | `$env.LAST_EXIT_CODE` | Last exit code |
-| `echo $RANDOM` | `random int` | Random number |
+| Bash                   | Nushell                          | Notes                |
+| ---------------------- | -------------------------------- | -------------------- |
+| `FOO="bar"`            | `let foo = 'bar'`                | Immutable by default |
+| `FOO="bar"`            | `mut foo = 'bar'`                | When mutation needed |
+| `readonly FOO="bar"`   | `const foo = 'bar'`              | Parse-time constant  |
+| `export FOO="bar"`     | `$env.FOO = 'bar'`               | Environment variable |
+| `echo $FOO`            | `$env.FOO`                       | Access env var       |
+| `echo ${FOO:-default}` | `$env.FOO? \| default 'default'` | With fallback        |
+| `echo $?`              | `$env.LAST_EXIT_CODE`            | Last exit code       |
+| `echo $RANDOM`         | `random int`                     | Random number        |
 
 ## String Operations
 
-| Bash | Nushell |
-|------|---------|
-| `${var^^}` | `$var \| str upcase` |
-| `${var,,}` | `$var \| str downcase` |
-| `${var:0:5}` | `$var \| str substring 0..5` |
-| `${#var}` | `$var \| str length` |
-| `${var/old/new}` | `$var \| str replace old new` |
+| Bash              | Nushell                             |
+| ----------------- | ----------------------------------- |
+| `${var^^}`        | `$var \| str upcase`                |
+| `${var,,}`        | `$var \| str downcase`              |
+| `${var:0:5}`      | `$var \| str substring 0..5`        |
+| `${#var}`         | `$var \| str length`                |
+| `${var/old/new}`  | `$var \| str replace old new`       |
 | `${var//old/new}` | `$var \| str replace --all old new` |
-| `${var%.ext}` | `$var \| path parse \| get stem` |
+| `${var%.ext}`     | `$var \| path parse \| get stem`    |
 
 ## Conditionals
 
@@ -109,20 +109,20 @@ open file.txt | lines | each {|line| $line }
 
 ## File Operations
 
-| Bash | Nushell |
-|------|---------|
-| `cat file` | `open file` or `open --raw file` |
-| `wc -l file` | `open file \| lines \| length` |
-| `touch file` | `touch file` |
-| `mkdir -p dir` | `mkdir dir` |
-| `rm -rf dir` | `rm -r dir` |
-| `cp src dst` | `cp src dst` |
-| `mv src dst` | `mv src dst` |
-| `find . -name "*.rs"` | `glob **/*.rs` |
-| `test -f file` | `('file' \| path exists)` |
-| `test -d dir` | `('dir' \| path type) == dir` |
-| `basename path` | `'path' \| path basename` |
-| `dirname path` | `'path' \| path dirname` |
+| Bash                  | Nushell                          |
+| --------------------- | -------------------------------- |
+| `cat file`            | `open file` or `open --raw file` |
+| `wc -l file`          | `open file \| lines \| length`   |
+| `touch file`          | `touch file`                     |
+| `mkdir -p dir`        | `mkdir dir`                      |
+| `rm -rf dir`          | `rm -r dir`                      |
+| `cp src dst`          | `cp src dst`                     |
+| `mv src dst`          | `mv src dst`                     |
+| `find . -name "*.rs"` | `glob **/*.rs`                   |
+| `test -f file`        | `('file' \| path exists)`        |
+| `test -d dir`         | `('dir' \| path type) == dir`    |
+| `basename path`       | `'path' \| path basename`        |
+| `dirname path`        | `'path' \| path dirname`         |
 
 ## Command Substitution
 
@@ -195,13 +195,13 @@ $config.host
 
 ## Process Management
 
-| Bash | Nushell |
-|------|---------|
-| `command &` | `job spawn { command }` |
-| `jobs` | `job list` |
-| `kill $PID` | `kill $pid` or `job kill $id` |
-| `ps aux` | `ps` |
-| `command1 && command2` | `command1; command2` |
+| Bash                     | Nushell                               |
+| ------------------------ | ------------------------------------- |
+| `command &`              | `job spawn { command }`               |
+| `jobs`                   | `job list`                            |
+| `kill $PID`              | `kill $pid` or `job kill $id`         |
+| `ps aux`                 | `ps`                                  |
+| `command1 && command2`   | `command1; command2`                  |
 | `command1 \|\| command2` | `try { command1 } catch { command2 }` |
 
 ## JSON Processing (jq → Nushell)
@@ -246,26 +246,31 @@ try {
 ## Common Patterns
 
 ### Check if command exists
+
 ```bash
 # Bash
 if command -v git &> /dev/null; then echo "found"; fi
 ```
+
 ```nu
 # Nushell
 if (which git | is-not-empty) { print 'found' }
 ```
 
 ### Read environment with default
+
 ```bash
 # Bash
 PORT="${PORT:-8080}"
 ```
+
 ```nu
 # Nushell
 let port = ($env.PORT? | default 8080)
 ```
 
 ### Multiline strings
+
 ```bash
 # Bash heredoc
 cat << 'EOF'
@@ -273,6 +278,7 @@ line 1
 line 2
 EOF
 ```
+
 ```nu
 # Nushell raw string
 r#'line 1
