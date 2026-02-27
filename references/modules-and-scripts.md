@@ -3,11 +3,13 @@
 ## Module Organization
 
 ### File-form (simple modules)
+
 ```
 my-command.nu          # Single-file module, module name = filename
 ```
 
 ### Directory-form (larger modules)
+
 ```
 my-module/
 ├── mod.nu             # Module entry point (required)
@@ -23,7 +25,7 @@ Both forms behave identically once imported; only the path changes.
 ## Export Types
 
 | Export       | Keyword            | Example                             |
-|--------------|--------------------|------------------------------------|
+| ------------ | ------------------ | ----------------------------------- |
 | Commands     | `export def`       | `export def my-cmd [] { ... }`      |
 | Env commands | `export def --env` | `export def --env setup [] { ... }` |
 | Aliases      | `export alias`     | `export alias ll = ls -l`           |
@@ -59,12 +61,14 @@ use increment
 ## Submodule Patterns
 
 ### `export module` — Preserves submodule namespace
+
 ```nu
 # mod.nu
 export module utils.nu      # Commands accessed as: my-module utils <cmd>
 ```
 
 ### `export use` — Flattens into parent namespace
+
 ```nu
 # mod.nu
 export use utils.nu *       # Commands accessed as: my-module <cmd>
@@ -105,6 +109,7 @@ use lib/helpers.nu *             # Import from file path
 ## Scripts
 
 ### Basic script
+
 ```nu
 # myscript.nu
 def greet [name] {
@@ -117,6 +122,7 @@ greet 'World'
 Definitions run first (regardless of position in file), then the script body runs top-to-bottom.
 
 ### Parameterized scripts with main
+
 ```nu
 #!/usr/bin/env nu
 
@@ -148,6 +154,7 @@ nu myscript.nu test      # => Testing...
 **Important:** You must define a `main` command for subcommands to be accessible. An empty `def main [] {}` suffices.
 
 ### Shebang
+
 ```nu
 #!/usr/bin/env nu
 'Hello World!'
@@ -167,7 +174,7 @@ For stdin access: `#!/usr/bin/env -S nu --stdin`
 ## Parse-Time vs Runtime
 
 | Feature                | Parse-time      | Runtime               |
-|------------------------|-----------------|----------------------|
+| ---------------------- | --------------- | --------------------- |
 | `const` values         | Yes             | No (already resolved) |
 | `let` values           | No              | Yes                   |
 | `source` / `use` paths | Must be known   | N/A                   |
@@ -188,6 +195,7 @@ source $path    # Error: not a parse-time constant
 ## Testing
 
 ### Nupm package tests
+
 ```
 my-package/
 ├── nupm.nuon
@@ -200,6 +208,7 @@ my-package/
 Only fully exported commands from `tests` module are run by `nupm test`.
 
 ### Standalone tests with std assert
+
 ```nu
 use std/assert
 
@@ -215,6 +224,7 @@ for t in [
 ```
 
 ### Available assert commands
+
 ```nu
 use std/assert
 
@@ -227,6 +237,7 @@ assert error { failing-command }      # Expect an error
 ```
 
 ### Custom assertions
+
 ```nu
 def "assert positive" [n: int] {
     assert ($n > 0) --error-label {
@@ -237,6 +248,7 @@ def "assert positive" [n: int] {
 ```
 
 ### Basic test framework (without Nupm)
+
 ```nu
 use std/assert
 source fib.nu

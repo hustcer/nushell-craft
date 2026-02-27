@@ -1,12 +1,12 @@
 ---
 name: nushell-craft
 description: |
-  Comprehensive Nushell scripting best practices, idioms, and patterns. Use when writing, reviewing, or refactoring Nushell (.nu) scripts to ensure they follow idiomatic patterns, naming conventions, proper type annotations, functional style, and Nushell's unique design principles. Triggers on tasks involving Nushell scripts, modules, custom commands, pipelines, or any .nu file editing. Also helps convert Bash/POSIX scripts to idiomatic Nushell. Covers the type system, data manipulation, performance optimization, and common gotchas.
+  Comprehensive Nushell scripting best practices, idioms, security, and code review. Use when writing, reviewing, auditing, or refactoring Nushell (.nu) scripts to ensure they follow idiomatic patterns, naming conventions, proper type annotations, functional style, security best practices, and Nushell's unique design principles. Triggers on tasks involving Nushell scripts, modules, custom commands, pipelines, or any .nu file editing. Also helps convert Bash/POSIX scripts to idiomatic Nushell. Covers the type system, data manipulation, performance optimization, security hardening, script review, and common gotchas.
 ---
 
-# Nushell Craft — Best Practices Skill
+# Nushell Craft — Best Practices & Security Skill
 
-Write idiomatic, performant, and maintainable Nushell scripts. This skill enforces Nushell conventions and helps avoid common pitfalls.
+Write idiomatic, performant, secure, and maintainable Nushell scripts. This skill enforces Nushell conventions, catches security issues, and helps avoid common pitfalls.
 
 ## Core Principles
 
@@ -435,25 +435,161 @@ timeit { expensive-command }      # Measure execution time
 metadata $value                   # Inspect span and other metadata
 ```
 
+## Security Best Practices
+
+Refer to [Security Reference](references/security.md) for the full guide.
+
+Nushell is safer than Bash by design (no `eval`, arguments passed as arrays not through shell), but security risks remain.
+
+### Never execute untrusted input as code
+
+```nu
+# DANGEROUS — arbitrary code execution
+^nu -c $user_input
+source $user_provided_file
+
+# DANGEROUS — shell interprets the string
+^sh -c $'echo ($user_input)'
+^bash -c $user_input
+```
+
+### Separate commands from arguments (prevent injection)
+
+```nu
+# Bad — constructing command strings
+let cmd = $'ls ($user_path)'
+^sh -c $cmd
+
+# Good — pass arguments directly (no shell interpretation)
+^ls $user_path
+run-external 'ls' $user_path
+```
+
+### Validate and sanitize paths
+
+```nu
+# Bad — path traversal possible
+def read-file [name: string] { open $name }
+
+# Good — validate against traversal
+def read-file [name: string, --base-dir: string = '.'] {
+    let full = ($base_dir | path join $name | path expand)
+    let base = ($base_dir | path expand)
+    if not ($full | str starts-with $base) {
+        error make {msg: $'Path traversal detected: ($name)'}
+    }
+    open $full
+}
+```
+
+### Protect credentials
+
+```nu
+# Bad — credential visible to all child processes and in env
+$env.API_KEY = 'secret-key-123'
+^curl -H $'Authorization: Bearer ($env.API_KEY)' $url
+
+# Good — scope credentials, use with-env
+with-env {API_KEY: (open ~/.secrets/api_key | str trim)} {
+    ^curl -H $'Authorization: Bearer ($env.API_KEY)' $url
+}
+```
+
+### Safe file operations
+
+```nu
+# Bad — predictable temp file, race condition
+let tmp = '/tmp/my-script-tmp'
+'data' | save $tmp
+
+# Good — use mktemp for unique temp files
+let tmp = (^mktemp | str trim)
+'data' | save $tmp
+# ... use $tmp ...
+rm $tmp
+```
+
+### Handle external command errors
+
+```nu
+let result = (^cargo build o+e>| complete)
+if $result.exit_code != 0 {
+    error make {msg: $'Build failed: ($result.stderr)'}
+}
+```
+
+### Safe rm operations
+
+```nu
+# Bad — glob from variable, could match unintended files
+^rm $'($user_dir)/*'
+
+# Good — validate then use trash or explicit paths
+if ($user_dir | path type) == 'dir' {
+    rm -r $user_dir
+}
+```
+
+## Script Review Checklist
+
+Refer to [Script Review Reference](references/script-review.md) for the full checklist.
+
+When reviewing a Nushell script, check these categories in order:
+
+### 1. Security review (highest priority)
+
+- [ ] No `nu -c` / `source` / `^sh -c` with untrusted input
+- [ ] No credential hardcoding or env leaking
+- [ ] Paths from user input are validated (no traversal)
+- [ ] External commands use argument separation (not string concatenation)
+- [ ] Temp files use `mktemp`, not predictable paths
+- [ ] `rm` operations are guarded and intentional
+
+### 2. Correctness review
+
+- [ ] Type annotations on all exported commands
+- [ ] I/O pipeline signatures match actual behavior
+- [ ] Error handling with `try/catch` for fallible operations
+- [ ] External commands checked with `complete` when error handling matters
+- [ ] Optional fields accessed with `?` operator
+- [ ] No `for` as final expression (use `each` instead)
+- [ ] `mut` not captured in closures
+
+### 3. Style review
+
+- [ ] Naming: kebab-case commands, snake_case variables
+- [ ] String format priority followed
+- [ ] Formatting: spacing, line length, multi-line rules
+- [ ] Documentation comments on exported commands
+- [ ] `^` prefix on external commands
+- [ ] Functional style preferred over imperative
+
+### 4. Performance review
+
+- [ ] `par-each` for I/O or CPU-bound parallel work
+- [ ] `each --flatten` for streaming when appropriate
+- [ ] Expensive computations cached in `let` bindings
+- [ ] Large files streamed (lazy), not loaded entirely
+
 ## Common Pitfalls
 
 Refer to [Anti-Patterns Reference](references/anti-patterns.md) for detailed explanations.
 
-| Anti-Pattern                   | Fix                                              |
-| ------------------------------ | ------------------------------------------------ | -------------------------- | --- | --- | ---------------- |
-| `echo $value`                  | Just `$value` (implicit return)                  |
-| `$"simple text"`               | `'simple text'` (no interpolation needed)        |
-| `for` as final expression      | Use `each` (for doesn't return a value)          |
-| `mut` for accumulation         | Use `reduce` or `math sum`                       |
-| `let path = ...; source $path` | `const path = ...; source $path`                 |
-| `"hello" > file.txt`           | `'hello' \| save file.txt`                       |
-| `grep pattern`                 | `where $it =~ pattern` or built-in `find`        |
-| Parsing string output          | Use structured commands (`ls`, `ps`, `http get`) |
-| `$env.FOO = bar` inside `def`  | Use `def --env`                                  |
-| `{                             | x                                                | ... }` (space before pipe) | `{  | x   | ...}` (no space) |
-| `$record.missing` (error)      | `$record.missing?` (returns null)                |
-| `each` on single record        | Use `items` or `transpose` instead               |
-| External cmd without `^`       | Use `^grep` to be explicit about externals       |
+| Anti-Pattern                          | Fix                                              |
+| ------------------------------------- | ------------------------------------------------ |
+| `echo $value`                         | Just `$value` (implicit return)                  |
+| `$"simple text"`                      | `'simple text'` (no interpolation needed)        |
+| `for` as final expression             | Use `each` (for doesn't return a value)          |
+| `mut` for accumulation                | Use `reduce` or `math sum`                       |
+| `let path = ...; source $path`        | `const path = ...; source $path`                 |
+| `"hello" > file.txt`                  | `'hello' \| save file.txt`                       |
+| `grep pattern`                        | `where $it =~ pattern` or built-in `find`        |
+| Parsing string output                 | Use structured commands (`ls`, `ps`, `http get`) |
+| `$env.FOO = bar` inside `def`         | Use `def --env`                                  |
+| `{ \| x \| ... }` (space before pipe) | `{\|x\| ...}` (no space before params)           |
+| `$record.missing` (error)             | `$record.missing?` (returns null)                |
+| `each` on single record               | Use `items` or `transpose` instead               |
+| External cmd without `^`              | Use `^grep` to be explicit about externals       |
 
 ## Best Practices Summary
 
@@ -473,17 +609,21 @@ Refer to [Anti-Patterns Reference](references/anti-patterns.md) for detailed exp
 When writing or reviewing Nushell code:
 
 1. **Read existing code** to understand the context
-2. **Check naming** — kebab-case commands, snake_case variables
-3. **Check types** — Add/verify type annotations and I/O signatures
-4. **Check strings** — Follow the string format priority
-5. **Check patterns** — Prefer functional pipelines over imperative loops
-6. **Check formatting** — Spacing, line length, multi-line rules
-7. **Check documentation** — Comments for exported commands, parameter descriptions
-8. **Run validation** if possible — `nu -c 'source file.nu'` or `nu file.nu`
-9. **Summarize changes** made
+2. **Security audit** — Check for injection, path traversal, credential leaks (see [Security](references/security.md))
+3. **Check naming** — kebab-case commands, snake_case variables
+4. **Check types** — Add/verify type annotations and I/O signatures
+5. **Check strings** — Follow the string format priority
+6. **Check patterns** — Prefer functional pipelines over imperative loops
+7. **Check formatting** — Spacing, line length, multi-line rules
+8. **Check documentation** — Comments for exported commands, parameter descriptions
+9. **Check error handling** — try/catch, complete for externals, validate inputs
+10. **Run validation** if possible — `nu -c 'source file.nu'` or `nu file.nu`
+11. **Summarize changes** made with security findings highlighted
 
 ## References
 
+- [Security](references/security.md) — Security hardening, threat model, safe patterns
+- [Script Review](references/script-review.md) — Comprehensive review checklist
 - [String Formats](references/string-formats.md) — String type priority and conversion rules
 - [Anti-Patterns](references/anti-patterns.md) — Common mistakes with detailed fixes
 - [Data & Type System](references/data-and-types.md) — Type hierarchy, collections, conversions, type guards

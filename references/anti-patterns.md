@@ -19,6 +19,7 @@ def greet [name: string]: nothing -> string {
 ```
 
 Use `print` when you want to display a message as a side effect (not as return value):
+
 ```nu
 def process [] {
     print 'Processing...'    # Side effect: displayed to user
