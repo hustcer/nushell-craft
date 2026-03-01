@@ -1,4 +1,4 @@
-# nushell-craft
+# nushell-pro
 
 Nushell best practices, security hardening, and code review skill for Agents.
 
@@ -18,21 +18,21 @@ Write idiomatic, performant, secure, and maintainable [Nushell](https://www.nush
 
 ```bash
 # Install by npx skills
-npx skills add hustcer/nushell-craft
+npx skills add hustcer/nushell-pro
 # OR Install for Claude by claude cli
-claude skill add --name nushell-craft hustcer/nushell-craft
+claude skill add --name nushell-pro hustcer/nushell-pro
 ```
 
 Or clone manually into your skills directory:
 
 ```bash
-git clone https://github.com/hustcer/nushell-craft.git ~/.claude/skills/nushell-craft
+git clone https://github.com/hustcer/nushell-pro.git ~/.claude/skills/nushell-pro
 ```
 
 ## Structure
 
 ```
-nushell-craft/
+nushell-pro/
 ├── SKILL.md                             # Main skill (core rules, always loaded)
 └── references/
     ├── security.md                      # Threat model, safe patterns, Windows risks

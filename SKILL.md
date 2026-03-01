@@ -1,10 +1,10 @@
 ---
-name: nushell-craft
+name: nushell-pro
 description: |
   Comprehensive Nushell scripting best practices, idioms, security, and code review. Use when writing, reviewing, auditing, or refactoring Nushell (.nu) scripts to ensure they follow idiomatic patterns, naming conventions, proper type annotations, functional style, security best practices, and Nushell's unique design principles. Triggers on tasks involving Nushell scripts, modules, custom commands, pipelines, or any .nu file editing. Also helps convert Bash/POSIX scripts to idiomatic Nushell. Covers the type system, data manipulation, performance optimization, security hardening, script review, and common gotchas.
 ---
 
-# Nushell Craft — Best Practices & Security Skill
+# Nushell Pro — Best Practices & Security Skill
 
 Write idiomatic, performant, secure, and maintainable Nushell scripts. This skill enforces Nushell conventions, catches security issues, and helps avoid common pitfalls.
 
