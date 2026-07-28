@@ -38,6 +38,7 @@ git clone https://github.com/hustcer/nushell-pro.git /path/to/skills/nushell-pro
 nushell-pro/
 ├── SKILL.md                             # Main skill (core rules, always loaded)
 └── references/
+    ├── nu-0.114-migration.md            # Version migration and compatibility checklist
     ├── security.md                      # Threat model, safe patterns, Windows risks
     ├── script-review.md                 # Full review checklist (5 categories)
     ├── anti-patterns.md                 # 34 anti-patterns with fixes
