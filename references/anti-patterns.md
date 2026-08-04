@@ -8,6 +8,7 @@ Common mistakes and their idiomatic fixes when writing Nushell scripts.
 - 11–20: Parallelism, documentation, defaults, structured data, branching, modules, pipeline input, records, and null safety
 - 21–27: External commands, errors, collections, large data, parsing, multiline flags, and format strings
 - 28–34: Nu 0.114 migrations, SemVer, error records, spreadsheets, and stable diagnostic assertions
+- 35: Literal parentheses inside string interpolation
 
 ## 1. Using `echo` Instead of Implicit Return
 
@@ -196,6 +197,9 @@ let greeting = $"Hello, ($name)!"
 # Good — single-quoted interpolation (no escapes needed)
 let greeting = $'Hello, ($name)!'
 ```
+
+This preference has one hard exception: a string containing a **literal `(`**
+must use `$"..."`. See [#35](#35-using-single-quoted-interpolation-for-strings-with-literal-parentheses).
 
 ## 11. Using `each` When `par-each` Works
 
@@ -650,3 +654,37 @@ def diagnostic-text [value: any]: nothing -> string {
 Prefer direct `try/catch` and `$err.details` when the test does not need a real
 subprocess boundary. When it does, use a long, specific phrase and verify once
 under a narrow PTY.
+
+## 35. Using Single-Quoted Interpolation for Strings With Literal Parentheses
+
+`$'...'` does no escape processing, so every `(` inside it opens an
+interpolation expression — and `\(` cannot escape it. A literal paren is only
+expressible in `$"..."`, written `\(`. This is the most frequently repeated
+Nushell string mistake, and two of its three failure modes are silent.
+
+```nu
+let count = 3
+
+# Bad — silently evaluated, no error: yields "2 items"
+$'(1 + 1) items'
+
+# Bad — `env` is a real command, so its whole output (secrets included)
+# is spliced into the message
+$'Usage: deploy (env) --force'
+
+# Bad — runtime error: `s` is neither a built-in nor an external command
+$'Done ($count) file(s)'
+
+# Good — `\(` is a literal paren and `($count)` still interpolates
+$"Done ($count) file\(s)"           # => "Done 3 file(s)"
+$"Usage: deploy \(env) --force"     # => "Usage: deploy (env) --force"
+$"\(1 + 1) items"                   # => "(1 + 1) items"
+$"[docs]\(https://example.com)"     # => "[docs](https://example.com)"
+```
+
+Only `(` needs escaping; a `)` outside an expression is already literal. Keep
+`$'...'` for the common case with no literal parens — especially when the string
+contains literal backslashes, which `$"..."` would force you to double.
+
+See [String Formats](string-formats.md) for the parser rule and the full
+decision table.

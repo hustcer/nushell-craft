@@ -68,5 +68,10 @@
     "id": 14,
     "prompt": "Debug this Nu 0.114 checker: `let mut errors: list<string> = []; let fallback = ($value | default -1); if not (($rows | describe) | str starts-with 'list') { error make {msg: 'expected rows'} }`. `$rows` came from a homogeneous JSON array of objects.",
     "expected": "Replace `let mut` with `mut errors: list<string> = []`; parenthesize the negative fallback as `default (-1)` or use `default -- -1`; explain that homogeneous JSON object arrays commonly describe as `table<...>` while remaining list-like, and use a typed list boundary or compare `(describe --detailed | get type)` with `'list'` to accept both lists and tables."
+  },
+  {
+    "id": 15,
+    "prompt": "Review these Nushell message strings: `print $'Done ($count) file(s)'`, `print $'Usage: deploy (env) --force'`, `let note = $'see [docs](https://example.com)'`, and `let label = $'(1 + 1) items'`.",
+    "expected": "Flag that in $'...' every ( opens an interpolation expression and \\( cannot escape it: (s) and the markdown URL fail with \"neither a Nushell built-in nor a known external command\", (env) silently splices the entire environment into the message (a disclosure risk), and (1 + 1) silently yields \"2 items\". Fix with double-quoted interpolation and escaped parens: $\"Done ($count) file\\(s)\", $\"Usage: deploy \\(env) --force\", $\"see [docs]\\(https://example.com)\", $\"\\(1 + 1) items\". Note that only ( needs escaping and that $'...' stays preferred when no literal parens are present."
   }
 ]

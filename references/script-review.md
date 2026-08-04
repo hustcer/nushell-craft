@@ -116,6 +116,8 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] Bare words in arrays: `[foo bar]` not `["foo" "bar"]`
 - [ ] Single quotes for simple strings: `'hello'` not `"hello"`
 - [ ] Single-quoted interpolation preferred: `$'val: ($x)'` not `$"val: ($x)"`
+- [ ] Strings needing a **literal** `(` use `$"...\(..."`, never `$'...'` — in
+      `$'...'` the paren always opens an expression and `\(` does not escape it
 - [ ] Double quotes only when escape sequences needed: `"\n"`, `"\t"`
 - [ ] Raw strings for regex: `r#'pattern'#`
 - [ ] `str uppercase` / `str lowercase` used instead of deprecated `str upcase` / `str downcase`

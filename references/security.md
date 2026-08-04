@@ -29,6 +29,9 @@
 Despite these advantages, Nushell scripts can still be vulnerable to:
 
 - Command injection via `^sh -c`, `^bash -c`, or `nu -c` with untrusted input
+- Accidental command execution and data disclosure via unintended interpolation
+  — `(...)` inside `$'...'`/`$"..."` is evaluated, so an unescaped literal paren
+  in a message can run a command and splice its output into the string
 - Path traversal via unvalidated user-provided paths
 - Credential leaking through environment variables
 - Glob injection from user-controlled patterns
@@ -50,13 +53,14 @@ Despite these advantages, Nushell scripts can still be vulnerable to:
 
 ### High risk
 
-| Threat            | Vector                                   | Mitigation                                                               |
-| ----------------- | ---------------------------------------- | ------------------------------------------------------------------------ |
-| Path traversal    | `open $user_path`                        | Validate and canonicalize paths, check against base directory            |
-| Credential leak   | `$env.API_KEY = 'secret'`                | Use `with-env` for scoped credentials                                    |
-| PATH hijacking    | `$env.PATH` poisoning                    | Use absolute paths for critical commands                                 |
-| Glob injection    | typed `glob` reaches an external command | Validate value types; keep literal external arguments as `string` values |
-| Env var injection | `$env.LD_PRELOAD`                        | Clear dangerous env vars before running untrusted commands               |
+| Threat                   | Vector                                   | Mitigation                                                               |
+| ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------ |
+| Path traversal           | `open $user_path`                        | Validate and canonicalize paths, check against base directory            |
+| Credential leak          | `$env.API_KEY = 'secret'`                | Use `with-env` for scoped credentials                                    |
+| PATH hijacking           | `$env.PATH` poisoning                    | Use absolute paths for critical commands                                 |
+| Glob injection           | typed `glob` reaches an external command | Validate value types; keep literal external arguments as `string` values |
+| Env var injection        | `$env.LD_PRELOAD`                        | Clear dangerous env vars before running untrusted commands               |
+| Unintended interpolation | literal `(` in `$'...'`                  | Escape it as `\(` in `$"..."`; `$'...'` cannot escape parens             |
 
 ### Medium risk
 
@@ -370,3 +374,4 @@ When auditing a Nushell script for security:
 7. **Glob patterns** — Check if user input flows into `glob` or `ls` patterns; verify `--depth` limits
 8. **Environment** — Check if `$env.PATH` or `$env.LD_PRELOAD` could be poisoned
 9. **Error masking** — Verify errors are not silently swallowed; check `try` blocks have meaningful `catch`
+10. **Unintended interpolation** — Search interpolated strings for parenthesized text that was meant to be literal (`(env)`, `(s)`, `(y/n)`, markdown links); in `$'...'` it is executed, so escape it as `\(` in `$"..."`

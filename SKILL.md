@@ -32,7 +32,7 @@ in this file; load detailed references only when the task needs them.
 
    | Task                                                 | Reference                                                                                     |
    | ---------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-   | Nu 0.114+ migration and version compatibility       | [Nu 0.114 Migration](references/nu-0.114-migration.md)                                        |
+   | Nu 0.114+ migration and version compatibility        | [Nu 0.114 Migration](references/nu-0.114-migration.md)                                        |
    | String quoting, interpolation, regex, globs          | [String Formats](references/string-formats.md)                                                |
    | Security, paths, credentials, destructive operations | [Security](references/security.md)                                                            |
    | Script/code review                                   | [Script Review](references/script-review.md) and [Anti-Patterns](references/anti-patterns.md) |
@@ -106,6 +106,11 @@ with the same containment rule, then join only a validated leaf name.
 - Prefer simple literals and raw regex strings; use double quotes only when
   actual escapes are required.
 - Remember that `$'...'` interpolates but does not process escape sequences.
+- **A literal `(` forces `$"..."`.** Since `$'...'` does no escape processing,
+  every `(` inside it opens an interpolation expression and `\(` cannot prevent
+  that. Write `$"\(abc)($var)"`, never `$'\(abc)($var)'`. The failure is often
+  silent rather than an error: `$'(1 + 1) items'` evaluates to `2 items`. See
+  [String Formats](references/string-formats.md).
 - Never build command strings for execution.
 - Use kebab-case for commands/flags, snake_case for variables/parameters, and
   SCREAMING_SNAKE_CASE for environment variables.
