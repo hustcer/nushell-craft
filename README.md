@@ -9,6 +9,8 @@ Write idiomatic, performant, secure, and maintainable [Nushell](https://www.nush
 - **Best Practices** — Naming conventions, type annotations, I/O signatures, functional pipeline style, string format priority, and formatting rules
 - **Security Hardening** — Injection prevention, path traversal protection, credential scoping, safe file/temp operations, environment sanitization
 - **Stable CLI Tests** — PTY-width-independent assertions for nested Nushell diagnostics
+- **IDE Diagnostics** — JSONL-aware `nu --ide-check` validation that catches errors even when the process exits successfully
+- **Daemon & E2E Smoke Tests** — Deadline-based readiness checks, isolated state, tracked jobs/PIDs, and guaranteed cleanup
 - **Code Review** — Comprehensive checklist covering security, correctness, style, performance, and robustness
 - **Anti-Pattern Detection** — 34 common mistakes with idiomatic fixes
 - **Type System** — Type hierarchy, complex types, type guards, null safety patterns
@@ -37,6 +39,8 @@ git clone https://github.com/hustcer/nushell-pro.git /path/to/skills/nushell-pro
 ```
 nushell-pro/
 ├── SKILL.md                             # Main skill (core rules, always loaded)
+├── tests/
+│   └── validation-and-daemon-smoke.nu   # Executable IDE/job lifecycle regression test
 └── references/
     ├── nu-0.114-migration.md            # Version migration and compatibility checklist
     ├── security.md                      # Threat model, safe patterns, Windows risks
@@ -46,6 +50,7 @@ nushell-pro/
     ├── dataframes.md                    # Polars dataframes: lazy/eager, group-by, joins, large data
     ├── advanced-patterns.md             # Streaming, closures, parallel, debugging
     ├── modules-and-scripts.md           # Modules, exports, testing, attributes
+    ├── daemon-and-e2e-smoke-tests.md    # Background jobs, readiness, isolation, cleanup
     ├── string-formats.md                # String type priority and rules
     └── bash-to-nushell.md               # Bash/POSIX conversion guide
 ```
@@ -85,6 +90,17 @@ The skill includes a 5-category review checklist:
 3. **Style** — naming, strings, formatting, documentation
 4. **Performance** — parallelism, streaming, caching
 5. **Robustness** — input validation, file safety, process management
+
+## Validation
+
+```bash
+nu --no-config-file --ide-check 100 tests/validation-and-daemon-smoke.nu
+nu --no-config-file tests/validation-and-daemon-smoke.nu
+```
+
+The executable smoke test creates its own temporary fixture, verifies JSONL IDE
+diagnostic classification, starts and tracks a controlled external child, and
+checks that the job and child PID disappear during cleanup.
 
 ## License
 

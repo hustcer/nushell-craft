@@ -73,5 +73,15 @@
     "id": 15,
     "prompt": "Review these Nushell message strings: `print $'Done ($count) file(s)'`, `print $'Usage: deploy (env) --force'`, `let note = $'see [docs](https://example.com)'`, and `let label = $'(1 + 1) items'`.",
     "expected": "Flag that in $'...' every ( opens an interpolation expression and \\( cannot escape it: (s) and the markdown URL fail with \"neither a Nushell built-in nor a known external command\", (env) silently splices the entire environment into the message (a disclosure risk), and (1 + 1) silently yields \"2 items\". Fix with double-quoted interpolation and escaped parens: $\"Done ($count) file\\(s)\", $\"Usage: deploy \\(env) --force\", $\"see [docs]\\(https://example.com)\", $\"\\(1 + 1) items\". Note that only ( needs escaping and that $'...' stays preferred when no literal parens are present."
+  },
+  {
+    "id": 16,
+    "prompt": "My validation runs `nu --no-config-file --ide-check 100 script.nu | complete` and considers the script valid whenever `exit_code == 0`. The command returned zero, but stdout contains JSON Lines including `{\"type\":\"diagnostic\",\"severity\":\"Error\",...}` and `{\"type\":\"hint\",...}`. Review the check.",
+    "expected": "Explain that `--ide-check` can exit zero even with error diagnostics. Parse each non-empty stdout line with `from json`, fail on records whose type is `diagnostic` and severity is `Error`, and do not fail on hint records. Require the script path to exist before running the check, because a missing file also exits zero with empty output and would silently pass. Handle malformed JSONL, non-zero exit status, and stderr as separate CLI/protocol failures rather than using exit status as the diagnostic result."
+  },
+  {
+    "id": 17,
+    "prompt": "Review this Nushell E2E smoke test: it starts a daemon with `job spawn`, sleeps a fixed two seconds, probes once, and exits without recording the job ID/PIDs or using `finally`. It reuses the developer's normal state directory and treats every probe stderr line as a test failure.",
+    "expected": "Require an isolated `mktemp --directory` fixture and scoped environment, save the job ID and observe `job list`/PIDs, poll an explicit readiness condition until a deadline instead of sleeping a fixed duration, use `complete` and exit codes for external probes while allowing expected not-ready stderr during polling, and always stop the job/process plus remove only owned state in `finally`. Verify cleanup afterward; do not invent a `job wait` command."
   }
 ]

@@ -38,6 +38,7 @@ in this file; load detailed references only when the task needs them.
    | Script/code review                                   | [Script Review](references/script-review.md) and [Anti-Patterns](references/anti-patterns.md) |
    | Bash/POSIX conversion                                | [Bash to Nushell](references/bash-to-nushell.md)                                              |
    | Modules, exports, scripts, tests                     | [Modules & Scripts](references/modules-and-scripts.md)                                        |
+   | Daemons, background jobs, E2E smoke tests            | [Daemon & E2E Smoke Tests](references/daemon-and-e2e-smoke-tests.md)                           |
    | Types, records, lists, conversions                   | [Data & Type System](references/data-and-types.md)                                            |
    | Streaming, closures, performance, diagnostics        | [Advanced Patterns](references/advanced-patterns.md)                                          |
    | Large columnar data                                  | [Dataframes](references/dataframes.md)                                                        |
@@ -157,10 +158,23 @@ output shows they are currently failing.
 Use the narrowest safe commands first:
 
 ```bash
+nu --no-config-file --ide-check 100 path/to/script.nu
 nu -c 'source path/to/module.nu'
 nu path/to/test-script.nu
 ```
 
+- `--ide-check` emits JSON Lines on stdout and may still exit with code `0`
+  when a record has `type: "diagnostic"` and `severity: "Error"`. It also
+  exits `0` with empty output when the target file does not exist, so verify
+  the path exists before treating an empty result as a pass. Parse every
+  non-empty line with `from json`; do not use the process exit code alone.
+  Treat `severity: "Error"` diagnostics as blockers, surface other severities
+  such as `Warning` without blocking, and ignore `type: "hint"` records.
+  Handle a non-zero exit code or stderr separately as a CLI startup or I/O
+  failure.
+- Prefer `--no-config-file` for reproducible standalone checks. Omit it when
+  the script intentionally depends on commands or environment from user
+  configuration, and document that dependency.
 - For scripts with side effects, source/parse-check them or run against a temp
   fixture.
 - Reproduce terminal-sensitive tests under a narrow PTY when diagnostics or
