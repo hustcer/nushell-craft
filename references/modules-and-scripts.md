@@ -237,6 +237,11 @@ deploy staging
 --dry-run
 ```
 
+A multiline closure argument is the exception: braces keep the parser inside
+the call, so flags on the closing-brace line — for example
+`wait-until { ... } --timeout 3sec` — parse as part of the same invocation
+without extra parentheses.
+
 ### Shebang
 
 ```nu

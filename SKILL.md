@@ -38,7 +38,7 @@ in this file; load detailed references only when the task needs them.
    | Script/code review                                   | [Script Review](references/script-review.md) and [Anti-Patterns](references/anti-patterns.md) |
    | Bash/POSIX conversion                                | [Bash to Nushell](references/bash-to-nushell.md)                                              |
    | Modules, exports, scripts, tests                     | [Modules & Scripts](references/modules-and-scripts.md)                                        |
-   | Daemons, background jobs, E2E smoke tests            | [Daemon & E2E Smoke Tests](references/daemon-and-e2e-smoke-tests.md)                           |
+   | Daemons, background jobs, E2E smoke tests            | [Daemon & E2E Smoke Tests](references/daemon-and-e2e-smoke-tests.md)                          |
    | Types, records, lists, conversions                   | [Data & Type System](references/data-and-types.md)                                            |
    | Streaming, closures, performance, diagnostics        | [Advanced Patterns](references/advanced-patterns.md)                                          |
    | Large columnar data                                  | [Dataframes](references/dataframes.md)                                                        |

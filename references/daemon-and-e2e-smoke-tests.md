@@ -52,7 +52,7 @@ def wait-until [
         }
 
         if (date now) >= $deadline {
-            error make {msg: $"Readiness deadline exceeded after ($timeout)"}
+            error make {msg: $'Readiness deadline exceeded after ($timeout)'}
         }
 
         sleep $interval
@@ -113,7 +113,7 @@ try {
     }
 
     wait-until {
-        not ($job_id in (job list | get id))
+        $job_id not-in (job list | get id)
     } --timeout 2sec
 } finally {
     rm -r -f $fixture_root
@@ -127,6 +127,11 @@ so the `try` wrapper keeps cleanup idempotent without a check-then-kill race
 that could mask the original failure; the later poll on `job list` still
 proves the job terminated.
 
+A runnable variant of this fixture is maintained at
+`tests/validation-and-daemon-smoke.nu` in this skill's repository, with
+repo-specific environment names. When editing either copy, mirror structural
+changes in the other.
+
 ## External probes and expected failures
 
 Every status-sensitive external invocation should use `complete` and inspect
@@ -135,7 +140,7 @@ Every status-sensitive external invocation should use `complete` and inspect
 ```nu
 let probe = (^curl --silent --show-error --fail $health_url | complete)
 if $probe.exit_code != 0 {
-    error make {msg: $"Health probe failed: ($probe.stderr | str trim)"}
+    error make {msg: $'Health probe failed: ($probe.stderr | str trim)'}
 }
 
 let status = ($probe.stdout | from json)
