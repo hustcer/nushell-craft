@@ -85,6 +85,10 @@ on syntax or behavior that changed between Nushell releases.
 - On Nu 0.115, a spanned `error make` label has the shape
   `{text: ..., span: {start: ..., end: ...}}`. Do not use the obsolete flat
   `{text, start, end}` form.
+- On Nu 0.115.0, a `try/finally` nested directly inside an outer `try` whose
+  handler is `catch` silently skips the inner `finally`. Give the outer block a
+  `finally`, or put the inner one behind a `do`/command boundary, and assert
+  that the owned state is gone.
 - Treat rendered nested-Nu diagnostics as presentation text, not a stable
   protocol. For CLI tests, normalize ANSI styling, gutters, and PTY wrapping
   before matching a long, domain-specific phrase.
@@ -131,14 +135,14 @@ with the same containment rule, then join only a validated leaf name.
   and tags. Pin `--spec`, `--multiple`, tag handling, and key resolution when
   the input contract is controlled by another system instead of inheriting
   defaults accidentally.
-- Let `to yaml` reject non-round-trippable values by default. Use
-  `--non-roundtrip null|lossy` or `--serialize` only when that data loss or
-  Nushell-specific encoding is part of the documented contract.
+- Let `to yaml` reject non-round-trippable values by default. Opt out only when
+  that data loss is part of the documented contract, and quote the value:
+  `--non-roundtrip 'null'`. A bare `null` is a parse error, and
+  `--non-roundtrip 'lossy'` is rejected by `to yaml` on 0.115.0, so use
+  `--serialize` when a lossy encoding is genuinely wanted.
 - `group-by` record output cannot represent a null key and omits that group in
   Nu 0.115. Use `group-by --to-table` when null groups must be retained or
   distinguished from empty strings.
-- When saving structured values, use a recognized data extension or serialize
-  explicitly (`to json`, `to yaml`, `to nuon`, and so on) before `save`.
 
 ### Data flow and performance
 
@@ -205,7 +209,9 @@ nu path/to/test-script.nu
   the script intentionally depends on commands or environment from user
   configuration, and document that dependency.
 - For scripts with side effects, source/parse-check them or run against a temp
-  fixture.
+  fixture. When saving structured values, use a recognized data extension or
+  serialize explicitly (`to json`, `to yaml`, `to nuon`, and so on) before
+  `save`.
 - Do not use `nu --testbin` in Nu 0.115+. Recreate the required behavior with
   Nushell itself or a purpose-built test fixture.
 - Reproduce terminal-sensitive tests under a narrow PTY when diagnostics or

@@ -125,6 +125,9 @@ that changed in the supported Nu version without first reproducing it.
 - [ ] No bare `error make {msg: '...'}` without span when metadata is available
 - [ ] Nu 0.115 labels use `{text: ..., span: {start: ..., end: ...}}`, not flat
       `{text, start, end}` records
+- [ ] No `try/finally` is nested directly inside an outer `try` whose handler is
+      `catch`; on Nu 0.115.0 the inner `finally` is silently skipped, so cleanup
+      needs an outer `finally` or a `do`/command boundary
 
 ### Null safety
 
@@ -161,6 +164,10 @@ that changed in the supported Nu version without first reproducing it.
       `--key-resolution verbatim` / `--ignore-tags` are not used as validation
 - [ ] `to yaml` non-round-trip handling is deliberate, and golden tests compare
       semantics unless exact formatting is the contract
+- [ ] `--non-roundtrip` values are quoted (`'null'`); bare `null` is a parse
+      error and `to yaml --non-roundtrip 'lossy'` is rejected on 0.115.0
+- [ ] YAML call sites that read colon-bearing scalars (`HH:MM:SS`, IDs) account
+      for the 1.1 sexagesimal / 1.2 string split
 - [ ] KDL spec and `nodes`/`jik` format are pinned when files cross a system
       boundary
 
@@ -297,14 +304,16 @@ that changed in the supported Nu version without first reproducing it.
 
 - [ ] Tests cover success, invalid input, boundary values, and external-command
       failure for changed behavior
-- [ ] Side-effecting tests use isolated temp fixtures and verify cleanup or
-      partial-success state
+- [ ] Side-effecting tests use isolated temp fixtures and assert after the
+      `try`/`finally` that the owned state is gone, or record partial-success
+      state explicitly
 - [ ] Version-sensitive tests run on the project's lowest supported Nu version
       as well as the current target when compatibility is claimed
 - [ ] `--ide-check` JSON Lines are parsed for error diagnostics; exit code `0`
       and empty output are not accepted blindly
-- [ ] On Nu 0.115+, `scope commands | get deprecation_info` is used to confirm
-      deprecations instead of relying only on memory or rendered help text
+- [ ] On Nu 0.115+, `scope commands` `deprecation_info` is used to confirm
+      deprecations instead of relying only on memory or rendered help text; it
+      is a table, so read a single command's entry as `deprecation_info.0`
 
 ---
 

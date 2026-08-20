@@ -15,7 +15,7 @@ Write idiomatic, performant, secure, and maintainable [Nushell](https://www.nush
 - **Anti-Pattern Detection** — 35 common mistakes with idiomatic fixes
 - **Type System** — Type hierarchy, complex types, type guards, null safety patterns
 - **Nu 0.114 Support** — Stricter type checking, explicit submodule imports, `run`, POSIX `--`, SemVer, spreadsheet import changes, and updated diagnostics
-- **Nu 0.115 Support** — YAML 1.2 contracts, `external_arg`, row conditions, binary filesize slicing, SemVer comparisons, null grouping, and test migrations
+- **Nu 0.115 Support** — YAML 1.2 contracts, `external_arg`, row conditions, binary filesize slicing, SemVer comparisons, null grouping, test migrations, and reproduction-verified workarounds for known 0.115.0 defects
 - **Bash Conversion** — Side-by-side Bash-to-Nushell translation guide
 - **Performance** — Parallel processing with `par-each`, streaming patterns, memory-efficient techniques
 - **Data Processing** — Polars dataframes (lazy/eager), group-by, joins, window/sequence ops, nested list/struct data, reshaping, binning, time zones, SQL, column selectors, and large-data / columnar analytics
@@ -47,7 +47,7 @@ nushell-pro/
     ├── nu-0.114-migration.md            # Version migration and compatibility checklist
     ├── nu-0.115-migration.md            # YAML, CLI, command, and review changes
     ├── security.md                      # Threat model, safe patterns, Windows risks
-    ├── script-review.md                 # Full review checklist (5 categories)
+    ├── script-review.md                 # Review method + 5-category checklist
     ├── anti-patterns.md                 # 35 anti-patterns with fixes
     ├── data-and-types.md                # Type system, collections, conversions
     ├── dataframes.md                    # Polars dataframes: lazy/eager, group-by, joins, large data
@@ -105,7 +105,10 @@ nu --no-config-file tests/nu-0.115-smoke.nu
 
 The executable smoke tests cover JSONL IDE diagnostics, controlled job/process
 cleanup, YAML 1.2 boundaries, high-frequency 0.115 commands, null grouping,
-SemVer edge cases, and raw script CLI arguments.
+SemVer edge cases, and raw script CLI arguments. They also lock two Nu 0.115.0
+defects — `to yaml --non-roundtrip 'lossy'` being rejected, and a nested
+`finally` being skipped — so the guidance is retracted as soon as a patched Nu
+makes those assertions fail.
 
 ## License
 
