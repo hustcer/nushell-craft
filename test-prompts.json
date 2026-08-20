@@ -83,5 +83,20 @@
     "id": 17,
     "prompt": "Review this Nushell E2E smoke test: it starts a daemon with `job spawn`, sleeps a fixed two seconds, probes once, and exits without recording the job ID/PIDs or using `finally`. It reuses the developer's normal state directory and treats every probe stderr line as a test failure.",
     "expected": "Require an isolated `mktemp --directory` fixture and scoped environment, save the job ID and observe `job list`/PIDs, poll an explicit readiness condition until a deadline instead of sleeping a fixed duration, use `complete` and exit codes for external probes while allowing expected not-ready stderr during polling, and always stop the job/process plus remove only owned state in `finally`. Verify cleanup afterward; do not invent a `job wait` command."
+  },
+  {
+    "id": 18,
+    "prompt": "Review a Nu 0.115 deployment report that parses `yes` and `0247` from vendor YAML with plain `from yaml`, groups rows by an optional `tenant` into record output, serializes a closure with `to yaml`, and saves a table directly to `report.out`.",
+    "expected": "Require an explicit YAML 1.1/1.2 contract for vendor scalars, choose strict/list/tag behavior deliberately, use `group-by --to-table` if null tenants must survive, reject or explicitly choose non-round-trip YAML handling for the closure, and serialize structured output before saving to an unknown extension. Findings should identify concrete data-loss or type-change triggers rather than list flags mechanically."
+  },
+  {
+    "id": 19,
+    "prompt": "Review a Nu 0.115 CLI wrapper whose `main` must preserve unquoted values like `0001` and `true`. It declares untyped parameters, interpolates them into `nu -c`, defines `let ans = ...`, and creates an error label as `{text: 'bad input', start: $span.start, end: $span.end}`.",
+    "expected": "Use `external_arg` only for the token-preserving boundary and then convert/validate its glob values; never interpolate them into `nu -c`. Prefer the intended executable with separate argv, or keep a required `nu -c` program constant, define `main`, and pass values after `--` on 0.115. Rename the reserved `ans` binding, and use the 0.115 spanned label shape `{text: ..., span: {start: ..., end: ...}}`. Prioritize injection and correctness before style."
+  },
+  {
+    "id": 20,
+    "prompt": "Review a Nu 0.115.0 minimum-version guard that directly passes `(('2.0.1' | into semver) >= '2.0.0')` to `assert` and assumes `into semver --loose | into string` removes a leading `v`. The project also supports Nu 0.114.",
+    "expected": "Recognize native semver ordering but reproduce the 0.115.0 parser inference edge in a statically boolean context; use the documented one-item-list extraction workaround only for affected 0.115.0 code and a semver-range membership check for a 0.114-compatible gate. Explain that loose parsing retains the original prefix when converted back to string, so normalization must be explicit if required."
   }
 ]

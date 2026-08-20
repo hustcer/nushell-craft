@@ -2,6 +2,53 @@
 
 Comprehensive checklist for reviewing Nushell scripts. Check items in order of priority.
 
+## Contents
+
+- [Review method](#review-method)
+- [Security](#1-security-critical)
+- [Correctness](#2-correctness)
+- [Style and idiom](#3-style--idiom)
+- [Performance](#4-performance)
+- [Robustness](#5-robustness)
+- [Review workflow](#review-workflow)
+
+---
+
+## Review Method
+
+Before listing findings:
+
+1. Read the repository instructions, supported Nu versions, changed files, and
+   relevant call sites/tests. A local `nu --version` is evidence about the test
+   environment, not necessarily the project's compatibility target.
+2. Summarize the script's entry points, pipeline contracts, external inputs,
+   side effects, and trust boundaries. Follow changed helpers into their callers
+   when the bug depends on a wider data flow.
+3. Run the narrowest safe check that can falsify a suspected issue. Prefer a
+   minimal Nu 0.115 reproduction for version-sensitive semantics, then run the
+   project's focused test.
+4. Separate blocking correctness/security defects from migration notes,
+   maintainability suggestions, and measured performance opportunities.
+5. If no actionable defect remains, say so and identify any validation gap or
+   compatibility version that was not available.
+
+### Finding quality
+
+Each finding should contain:
+
+- A severity (`P0` critical, `P1` high, `P2` medium, or `P3` low) based on
+  impact and likelihood, not how easy the fix is.
+- A concise title and the smallest useful `file:line` location.
+- The concrete input/state that triggers it, the observable impact, and why the
+  current tests do not prevent it.
+- Evidence from the language contract, command signature, minimal reproduction,
+  or focused test. Mark version-dependent conclusions explicitly.
+- A focused repair direction; do not require unrelated refactoring.
+
+Do not report speculative failures that cannot be connected to a reachable
+input, stylistic preferences already enforced by project tooling, or behavior
+that changed in the supported Nu version without first reproducing it.
+
 ---
 
 ## 1. Security (Critical)
@@ -13,6 +60,8 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] No `run` of untrusted `.nu` script paths; `run` targets must be parse-time constants
 - [ ] No `^sh -c`, `^bash -c`, or `^cmd.exe /C` with interpolated user input
 - [ ] No `run-external` with user-controlled command names
+- [ ] `external_arg` values are treated as untrusted raw tokens, not as
+      sanitized strings or safe paths/patterns
 
 ### Path safety
 
@@ -59,6 +108,10 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] Optional params and typed named options without defaults are handled as `oneof<T, nothing>`; boolean switch flags remain `bool`
 - [ ] Rest parameters typed: `...args: string`
 - [ ] Runtime assignment annotations are valid under Nu 0.114's default `enforce-runtime-annotations`
+- [ ] `external_arg` is used only where raw CLI token spelling matters; values
+      are converted/validated before structured use
+- [ ] No command/module/export shadows a parser keyword, and no binding uses
+      reserved `ans` on Nu 0.115+
 
 ### Error handling
 
@@ -70,6 +123,8 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] `catch` blocks read `$err.details` for structured diagnostics, not removed `$err.json`
 - [ ] Custom errors include `label` with `span` for good error messages
 - [ ] No bare `error make {msg: '...'}` without span when metadata is available
+- [ ] Nu 0.115 labels use `{text: ..., span: {start: ..., end: ...}}`, not flat
+      `{text, start, end}` records
 
 ### Null safety
 
@@ -77,6 +132,8 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] `default` used for fallback values: `$val | default 'N/A'`
 - [ ] No bare field access on records from external/untrusted sources
 - [ ] `$in` captured early with `let` when used multiple times
+- [ ] `group-by` uses `--to-table` when null groups must survive or remain
+      distinct from empty strings
 
 ### Logic correctness
 
@@ -89,7 +146,23 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] `parse` gets `lines` first when line-by-line parsing of stream input is intended
 - [ ] Correct operator: `>` in non-pipeline context is comparison, not redirect
 - [ ] Multiline custom command calls with named flags are one-line or wrapped in parentheses
-- [ ] SemVer logic uses `into semver` / `into semver-range` / `semver bump`, not string surgery
+- [ ] SemVer logic uses `into semver`, direct comparison on Nu 0.115 (including
+      the 0.115.0 bool-context inference workaround when required),
+      `into semver-range`, or `semver bump`, not string surgery
+- [ ] `take while/until --include` has boundary tests for include counts zero,
+      one, and greater than one when off-by-one behavior matters
+
+### Data-format contracts
+
+- [ ] YAML call sites pin `--spec` when upstream YAML 1.1/1.2 semantics matter
+- [ ] `from yaml --multiple` produces a stable expected shape (`list` or
+      `single`) at API boundaries instead of relying unintentionally on `auto`
+- [ ] Non-string YAML keys and unknown tags are rejected or explicitly handled;
+      `--key-resolution verbatim` / `--ignore-tags` are not used as validation
+- [ ] `to yaml` non-round-trip handling is deliberate, and golden tests compare
+      semantics unless exact formatting is the contract
+- [ ] KDL spec and `nodes`/`jik` format are pinned when files cross a system
+      boundary
 
 ### External commands
 
@@ -98,6 +171,8 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] `sort` (Nushell builtin) vs `^sort` (Unix) distinction maintained
 - [ ] Arguments to external commands separated (not concatenated strings)
 - [ ] Format strings passed to external commands use double quotes for simple escapes, or `char tab` / `char nl` when interpolation is needed
+- [ ] CLI tests use real fixtures rather than removed `nu --testbin` on Nu
+      0.115+
 
 ---
 
@@ -130,6 +205,8 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] `enumerate` instead of manual index counters
 - [ ] `reduce` instead of `mut` accumulator + `for`
 - [ ] `match` preferred for multi-branch dispatch on a single value
+- [ ] Simple `any`/`all` predicates may use Nu 0.115 row conditions; closures
+      remain when they improve scope clarity or support older Nu versions
 
 ### Formatting
 
@@ -160,18 +237,23 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 
 ### Parallelism
 
-- [ ] `par-each` used for I/O-bound work (file reads, HTTP requests)
-- [ ] `par-each` used for CPU-bound work (data processing)
-- [ ] `--threads` specified when controlling concurrency matters
-- [ ] `each` used only when order matters or list is tiny
+- [ ] `par-each` is suggested only for independent work with safe concurrency;
+      ordering, rate limits, shared state, and side effects are accounted for
+- [ ] `--threads` is bounded when resource usage or service limits matter
+- [ ] Performance findings include a scale argument or measurement; do not flag
+      every sequential `each` mechanically
 
 ### Streaming & memory
 
 - [ ] `each --flatten` for streaming nested results
 - [ ] Large files not loaded entirely when streaming suffices
 - [ ] `lines` + pipeline for line-by-line processing of large files
+- [ ] Nu 0.115 lazy `lines` output is not collected unless random access or
+      repeated traversal requires materialization
 - [ ] `peek` used for stream metadata/sample inspection instead of collecting
 - [ ] `first N` / `take while` to limit processing early
+- [ ] Binary byte windows use `filesize` counts (`first 16b`, `chunks 10MiB`)
+      where this makes units and boundaries clearer
 
 ### Caching & computation
 
@@ -196,6 +278,10 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] `path exists` checked before `open` when file may not exist
 - [ ] `save --force` used intentionally (overwrites without warning)
 - [ ] File encoding handled appropriately (`open --raw` for binary)
+- [ ] Structured output uses a recognized extension or an explicit `to ...`
+      serializer before `save`
+- [ ] Empty input is rejected before `path type`; Nu 0.115 returns `null` for
+      `'' | path type`
 - [ ] `from xlsx` / `from ods` output handled as a record of sheet tables
 - [ ] Spreadsheet imports use `--noheaders`, `--first-row`, or `--prefer-integers` instead of removed `--header-row`
 - [ ] `mkdir -v` / `mv -v` / `rm -v` outputs treated as tables, not parsed text
@@ -207,14 +293,32 @@ Comprehensive checklist for reviewing Nushell scripts. Check items in order of p
 - [ ] Background jobs (`job spawn`) tracked and cleaned up
 - [ ] Exit codes checked for critical external commands
 
+### Tests and compatibility
+
+- [ ] Tests cover success, invalid input, boundary values, and external-command
+      failure for changed behavior
+- [ ] Side-effecting tests use isolated temp fixtures and verify cleanup or
+      partial-success state
+- [ ] Version-sensitive tests run on the project's lowest supported Nu version
+      as well as the current target when compatibility is claimed
+- [ ] `--ide-check` JSON Lines are parsed for error diagnostics; exit code `0`
+      and empty output are not accepted blindly
+- [ ] On Nu 0.115+, `scope commands | get deprecation_info` is used to confirm
+      deprecations instead of relying only on memory or rendered help text
+
 ---
 
 ## Review Workflow
 
-1. **Skim the entire script** — Understand purpose, entry points, data flow
-2. **Security pass** — Check Section 1 items systematically
-3. **Correctness pass** — Verify types, error handling, null safety
-4. **Style pass** — Naming, strings, formatting, documentation
-5. **Performance pass** — Parallelism, streaming, caching opportunities
-6. **Robustness pass** — Input validation, file safety, process management
-7. **Summarize findings** — Group by severity, highlight security issues first
+1. **Establish scope and versions** — Read instructions, diff, callers, tests,
+   and supported Nu range.
+2. **Model data and trust flow** — Trace entry points, types, paths, external
+   processes, serialization, and side effects.
+3. **Security pass** — Check Section 1 systematically.
+4. **Correctness and migration pass** — Verify types, null handling, errors,
+   data-format contracts, process status, and 0.114/0.115 behavior.
+5. **Robustness and tests pass** — Exercise boundary/failure paths and cleanup.
+6. **Maintainability/performance pass** — Report only actionable, non-tooling
+   issues and performance claims with a scale argument or measurement.
+7. **Falsify and rank findings** — Reproduce version-sensitive claims, remove
+   false positives, then report by severity with precise locations.
